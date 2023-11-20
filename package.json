@@ -1,0 +1,17 @@
+{
+  "name": "trendy-cart-app",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "watch": "tsc --w",
+    "start": "func start",
+    "test": "echo \"No tests yet...\"",
+    "start:host": "func start --javascript"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.0.0",
+    "mysql2": "^3.6.2"
+  },
+  "devDependencies": {},
+  "main": "src/functions/*.js"
+}

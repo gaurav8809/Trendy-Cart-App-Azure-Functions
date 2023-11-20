@@ -1,0 +1,83 @@
+const mysql = require('mysql2/promise');
+
+const { mySQLConfig } = require('../assets/configs');
+
+const getProducts = () => {
+    return new Promise( async (resolve, reject) => {
+        try {
+            let QUERY = 'SELECT * FROM product';
+
+            // Connection Made //
+            const connection = await mysql.createConnection(mySQLConfig);
+            // const conn = new mysql.createConnection(mySQLConfig);
+        
+            const [rows, fields] = await connection.execute(QUERY);
+            console.log('Data: ', rows);
+
+            let data = JSON.stringify({
+                status: 200,
+                data: rows,
+            });
+
+            return resolve(data);
+        } catch (error) {
+            console.log('!! Error while DB Handling !!');
+        }
+    })
+    
+
+    // // Connection Open //
+    // return conn.connect(err => { 
+    //         if (err) { 
+    //             console.log("!!! Cannot connect !!! Error:");
+    //             throw err;
+    //         }
+    //         else {
+    //             console.log("Connection established.");
+
+    //             // Query Call //
+    //             let QUERY = 'SELECT * FROM product';
+    //             return conn.query(QUERY, (err, results, fields) => {
+    //                     if (err) throw err;
+    //                     console.log('DATA: ', results);
+    //                     // for (i = 0; i < results.length; i++) {
+    //                     //     console.log('Row: ' + JSON.stringify(results[i]));
+    //                     // }
+    //                     return results;
+    //                 })
+
+    //             // Connection close //
+    //             conn.end((err) => { 
+    //                     if (err) throw err;
+    //                     else  console.log('Closing connection.') 
+    //             });
+    //         }
+    //     });
+};
+
+const getProductsByID = (product_ID_Array) => {
+    return new Promise( async (resolve, reject) => {
+        try {
+            let QUERY = 'SELECT * FROM product WHERE product_ID IN ' + '(' + product_ID_Array.join(',') + ')'; ;
+
+            // Connection Made //
+            const connection = await mysql.createConnection(mySQLConfig);
+            // const conn = new mysql.createConnection(mySQLConfig);
+
+            console.log('Connection established successfully');
+        
+            const [rows, fields] = await connection.execute(QUERY);
+            console.log('Data: ', rows);
+
+            return resolve(JSON.stringify(rows));
+        } catch (error) {
+            console.log('!! Error while DB Handling !!', error);
+            reject('Problem occure');
+        }
+    })
+};
+
+module.exports = {
+    getProducts,
+    getProductsByID
+};
