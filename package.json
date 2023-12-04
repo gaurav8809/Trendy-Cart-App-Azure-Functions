@@ -10,8 +10,10 @@
   },
   "dependencies": {
     "@azure/functions": "^4.0.0",
+    "bcrypt": "^5.1.1",
+    "crypto": "^1.0.1",
+    "lodash": "^4.17.21",
     "mysql2": "^3.6.2"
   },
-  "devDependencies": {},
   "main": "src/functions/*.js"
 }

@@ -1,4 +1,6 @@
 const fs = require('fs');
+const crypto = require('crypto');
+
 var mySQLConfig =
 {
     // host: process.env["MYSQL_CONNECTION_HOST"],
@@ -16,7 +18,9 @@ var mySQLConfig =
     ssl: {ca: fs.readFileSync("src/assets/DigiCertGlobalRootCA.crt.pem")},
     // rowsAsArray: true
 };
+var cryptoKey = crypto.randomBytes(32);
 
 module.exports = {
-    mySQLConfig
+    mySQLConfig,
+    cryptoKey
 };
