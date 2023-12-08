@@ -9,7 +9,8 @@ const {
     getCartData, 
     getWishListData, 
     addProductIntoWishlist, 
-    removeProductFromWishlist 
+    removeProductFromWishlist, 
+    updateProductIntoCart
 } = require('../handler/userSQLHandler');
 
 app.http('authenticate', {
@@ -18,7 +19,6 @@ app.http('authenticate', {
     route: 'user/authenticate',
     handler: async (request) => {
         let body = await request.json();
-        console.log('body: ', body);
         let sqlResponse = await authenticate(body);
         return {
             body:  sqlResponse,
@@ -34,7 +34,6 @@ app.http('register', {
     route: 'user/register',
     handler: async (request) => {
         let body = await request.json();
-        console.log('body: ', body);
         let sqlResponse = await register(body);
         return {
             body:  sqlResponse,
@@ -63,8 +62,22 @@ app.http('addProductIntoCart', {
     route: 'user/addProductIntoCart',
     handler: async (request) => {
         let body = await request.json();
-        console.log('body: ', body);
         let sqlResponse = await addProductIntoCart(body);
+        return {
+            body:  sqlResponse,
+            headers: { 'content-type': 'application/json' },
+            status: sqlResponse.status,
+        };
+    }
+});
+
+app.http('updateProductIntoCart', {
+    methods: ['POST'],
+    authLevel: 'anonymous',
+    route: 'user/updateProductIntoCart',
+    handler: async (request) => {
+        let body = await request.json();
+        let sqlResponse = await updateProductIntoCart(body);
         return {
             body:  sqlResponse,
             headers: { 'content-type': 'application/json' },
@@ -79,7 +92,6 @@ app.http('removeProductFromCart', {
     route: 'user/removeProductFromCart',
     handler: async (request) => {
         let body = await request.json();
-        console.log('body: ', body);
         let sqlResponse = await removeProductFromCart(body);
         return {
             body:  sqlResponse,
@@ -107,7 +119,6 @@ app.http('addProductIntoWishlist', {
     route: 'user/addProductIntoWishlist',
     handler: async (request) => {
         let body = await request.json();
-        console.log('body: ', body);
         let sqlResponse = await addProductIntoWishlist(body);
         return {
             body:  sqlResponse,

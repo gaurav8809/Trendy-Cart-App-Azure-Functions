@@ -3,22 +3,23 @@ const _ = require('lodash');
 const { mySQLConfig } = require('../assets/configs');
 
 const getProducts = () => {
+    let connection;
     return new Promise( async (resolve, reject) => {
         try {
             let QUERY = 'SELECT * FROM product';
 
             // Connection Made //
-            const connection = await mysql.createConnection(mySQLConfig);
-            // const conn = new mysql.createConnection(mySQLConfig);
-        
-            const [rows, fields] = await connection.execute(QUERY);
-            console.log('Data: ', rows);
+            connection = await mysql.createConnection(mySQLConfig);
+            const [rows] = await connection.execute(QUERY);
 
             let data = JSON.stringify(rows);
 
             return resolve(data);
         } catch (error) {
             console.log('!! Error while DB Handling !!');
+        } finally {
+            console.log('!!! Connection closed !!!');
+            connection.end();
         }
     })
 };

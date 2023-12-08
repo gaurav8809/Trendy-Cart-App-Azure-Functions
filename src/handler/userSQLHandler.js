@@ -241,6 +241,86 @@ const addProductIntoCart = (data) => {
     })
 };
 
+const updateProductIntoCart = (data) => {
+    return new Promise( async (resolve, reject) => {
+        try {
+            // Initialization //
+            let {qty, size, user, product, cart} = data;
+            let subtotal = 0.00, salesTax, total;
+
+            const createResponse = async (cart_ID, subtotal, salesTax, total) => {
+                // Query //
+                let SEARCH_QUERY = `
+                    SELECT * FROM cart_item 
+                    WHERE 
+                    cart_ID=?
+                `;
+                const [searchRows] = await connection.execute(SEARCH_QUERY, [cart.cart_ID]);
+            
+                return resolve(JSON.stringify({
+                    status: 200,
+                    message: 'Product details updated',
+                    response: {
+                        cart_ID: cart_ID,
+                        user_ID: user.user_ID,
+                        products: searchRows,
+                        subtotal,
+                        salesTax,
+                        total,
+                    }   
+                }));
+            }
+
+            // Connection Made //
+            const connection = await mysql.createConnection(mySQLConfig);
+            
+            // Query //
+            let SELECT_QUERY = 
+            `
+                SELECT * FROM cart_item
+                WHERE cart_ID=?
+            `;
+            const [selectRows] = await connection.execute(SELECT_QUERY, [cart.cart_ID]);
+
+            if(selectRows.length) {
+
+                let cart_item_array = selectRows;
+
+                cart_item_array.map(item => {
+                    if(item.product_ID !== product.product_ID) {
+                        subtotal += parseFloat(item.total);
+                    }
+                });
+                
+                subtotal += (qty * parseFloat(product.price));
+                salesTax = (subtotal * 6) / 100;
+                total = subtotal + salesTax;
+                
+                // Query //
+                let UPDATE_QUERY = `
+                    UPDATE cart 
+                    SET subtotal=?, salesTax=?, total=?
+                    WHERE cart_ID=?
+                `;
+                await connection.execute(UPDATE_QUERY, [subtotal, salesTax, total, cart.cart_ID]);
+
+                // Query //
+                let UPDATE_QUERY_CART_ITEM = `
+                    UPDATE cart_item
+                    SET qty=?, size=?, total=?
+                    WHERE cart_ID=? AND product_ID=?
+                `;
+                await connection.execute(UPDATE_QUERY_CART_ITEM, [qty, size, qty * parseFloat(product.price), cart.cart_ID, product.product_ID]);
+
+                return await createResponse(cart.cart_ID, subtotal, salesTax, total)
+            }
+        } catch (error) {
+            console.log(error);
+            reject('Problem occure');
+        }
+    })
+};
+
 const removeProductFromCart = (data) => {
     return new Promise( async (resolve, reject) => {
         try {
@@ -346,7 +426,7 @@ const getWishListData = (user_ID) => {
 
             if(rows.length) {
                 let QUERY2 = 'SELECT * FROM wishlist_item WHERE wishlist_ID=?';        
-                const [rows2] = await connection.execute(QUERY2, [rows[0].cart_ID]);
+                const [rows2] = await connection.execute(QUERY2, [rows[0].wishlist_ID]);
     
                 result = {
                     status: 200, 
@@ -378,16 +458,16 @@ const addProductIntoWishlist = (data) => {
             // Initialization //
             let {user, product} = data;
 
-            const createResponse = async (wishilist_ID) => {
+            const createResponse = async (wishlist_ID) => {
                 // Query //
                 let INSRT_QUERY_WISHLIST_ITEMS = `
                     INSERT INTO wishlist_item 
-                    (wishilist_ID, product_ID) 
+                    (wishlist_ID, product_ID) 
                     VALUES 
                     (?, ?)
                 `;
                 await connection.execute(INSRT_QUERY_WISHLIST_ITEMS, [
-                    wishilist_ID,
+                    wishlist_ID,
                     product.product_ID
                 ]);
 
@@ -395,8 +475,8 @@ const addProductIntoWishlist = (data) => {
                 let SEARCH_QUERY = `
                 SELECT * FROM wishlist_item 
                 WHERE 
-                cart_ID=(
-                    SELECT wishilist_ID FROM wishlist WHERE user_ID=?
+                wishlist_ID=(
+                    SELECT wishlist_ID FROM wishlist WHERE user_ID=?
                 )
                 `;
                 const [searchRows] = await connection.execute(SEARCH_QUERY, [user.user_ID]);
@@ -405,7 +485,7 @@ const addProductIntoWishlist = (data) => {
                     status: 200,
                     message: 'Product added into wishlist',
                     response: {
-                        wishilist_ID: wishilist_ID,
+                        wishlist_ID: wishlist_ID,
                         user_ID: user.user_ID,
                         products: searchRows,
                     }   
@@ -497,6 +577,7 @@ module.exports = {
     // Cart
     getCartData,
     addProductIntoCart,
+    updateProductIntoCart,
     removeProductFromCart,
 
     // Wishlist
