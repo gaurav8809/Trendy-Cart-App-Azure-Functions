@@ -1,6 +1,6 @@
 const mysql = require('mysql2/promise');
 const _ = require('lodash');
-const { mySQLConfig, cryptoKey } = require('../assets/configs');
+const { mySQLConfig } = require('../assets/configs');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 
@@ -340,26 +340,16 @@ const removeProductFromCart = (data) => {
             // Query //
 
             if(rows) {
-
                 let subtotal = 0;
                 let salesTax, total;
-
-                console.log('O>P:', otherProducts);
                 
                 if(otherProducts.length) {
                     otherProducts.map(item => {
                         subtotal = subtotal + (parseFloat(item.price) * item.qty);
-                        console.log('price:', parseFloat(item.price));
-                        console.log('qty:', item.qty);
-                        console.log('Subtotal:', subtotal);
                     })
     
                     salesTax = (subtotal * 6) / 100;
                     total = subtotal + salesTax;
-    
-                    console.log('Subtotal:', subtotal);
-                    console.log('Subtotal:', salesTax);
-                    console.log('Subtotal:', total);
     
                     // Query //
                     let UPDATE_QUERY = `
@@ -405,6 +395,137 @@ const removeProductFromCart = (data) => {
             return resolve(JSON.stringify(result));
         } catch (error) {
             console.log('!! Deletion ', error);
+            reject('Problem occure');
+        }
+    })
+};
+
+const emptyCart = (data) => {
+    return new Promise( async (resolve, reject) => {
+        try {
+            const {user_ID, cart_ID} = data;
+
+            // Connection Made //
+            const connection = await mysql.createConnection(mySQLConfig);
+            console.log('Connection established successfully');
+            // Connection Mode //
+
+            // Query //
+            let QUERY = `DELETE FROM cart_item WHERE cart_ID=?`;
+            const [rows] = await connection.execute(QUERY, [cart_ID]);
+            // Query //
+
+            // Query //
+            let QUERY2 = `DELETE FROM cart WHERE user_ID=?`;
+            const [rows2] = await connection.execute(QUERY2, [user_ID]);
+            // Query //
+
+            if(rows && rows2) {
+                result = {
+                    status: 200, 
+                    message: 'Cart empty successfully',
+                };
+            } else {
+                result = {
+                    status: 404, 
+                    message: 'Product doesn\'t exist in the cart',
+                };
+            }
+            
+            return resolve(JSON.stringify(result));
+        } catch (error) {
+            console.log('!! Deletion ', error);
+            reject('Problem occure');
+        }
+    })
+}
+
+const getOrderData = (user_ID) => {
+    return new Promise( async (resolve, reject) => {
+        try {
+            let result;
+
+            // Connection Made //
+            const connection = await mysql.createConnection(mySQLConfig);
+            // const conn = new mysql.createConnection(mySQLConfig);
+        
+            let QUERY = 'SELECT * FROM order_data WHERE user_ID=?';
+            const [rows] = await connection.execute(QUERY, [user_ID]);
+
+            if(rows.length) {
+                return resolve(JSON.stringify(await Promise.all(rows.map(async order => {
+                    return new Promise( async (resolve, reject) => {
+                        let QUERY2 = 'SELECT * FROM order_item WHERE order_ID=?';        
+                        const [rows2] = await connection.execute(QUERY2, [order.order_ID]);
+                        resolve({
+                            ...order,
+                            products: rows2
+                        })
+                    });
+                }))));
+            } else {
+                return resolve(JSON.stringify({
+                    status: 404, 
+                    message: 'No data in order',
+                }));
+            }
+
+            // return resolve(JSON.stringify(result));
+        } catch (error) {
+            console.log(error);
+            reject('Problem occure');
+        }
+    })
+};
+
+const addProductIntoOrder = (data) => {
+    return new Promise( async (resolve, reject) => {
+        try {
+            // Initialization //
+            let {cart, user, paymentMethod, status} = data;
+            let {cart_ID, products, subtotal, salesTax, total} = cart;
+            
+            const createResponse = async (order_ID) => {
+
+                // Query //
+                let INSERT_QUERY_ORDER_ITEMS = `
+                    INSERT INTO order_item 
+                    (order_ID, product_ID, qty, size, price, total) 
+                    VALUES 
+                    (?, ?, ?, ?, ?, ?)
+                `;
+
+                products.map(product => {
+                    console.log('Product: ', product);
+                    new Promise( async (resolve, reject) => {
+                        await connection.execute(INSERT_QUERY_ORDER_ITEMS, [
+                            order_ID,
+                            product.product_ID,
+                            product.qty,
+                            product.size,
+                            parseFloat(product.price),
+                            parseFloat(product.price) * product.qty
+                        ]);
+                    });
+                });
+
+                await emptyCart({user_ID: user.user_ID, cart_ID});
+
+                let finalRes = await getOrderData(user.user_ID);
+                
+                return resolve(finalRes);
+            }
+
+            // Connection Made //
+            const connection = await mysql.createConnection(mySQLConfig);
+
+            // Query //
+            let INSRT_QUERY = `INSERT INTO order_data (user_ID, subtotal, salesTax, total, status, paymentMethod) VALUES (?, ?, ?, ?, ?, ?)`;
+            const [insertRows] = await connection.execute(INSRT_QUERY, [user.user_ID, subtotal, salesTax, total, status, paymentMethod]);
+        
+            return await createResponse(insertRows.insertId)
+        } catch (error) {
+            console.log(error);
             reject('Problem occure');
         }
     })
@@ -579,9 +700,14 @@ module.exports = {
     addProductIntoCart,
     updateProductIntoCart,
     removeProductFromCart,
+    emptyCart,
 
     // Wishlist
     getWishListData,
     addProductIntoWishlist,
-    removeProductFromWishlist
+    removeProductFromWishlist,
+
+    // order
+    getOrderData,
+    addProductIntoOrder,
 };

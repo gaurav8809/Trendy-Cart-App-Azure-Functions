@@ -1,6 +1,4 @@
 const { app } = require('@azure/functions');
-const fs = require('fs');
-const { readData } = require('../handler/ReadUserTable');
 const { 
     authenticate, 
     register, 
@@ -9,8 +7,11 @@ const {
     getCartData, 
     getWishListData, 
     addProductIntoWishlist, 
+    updateProductIntoCart,
     removeProductFromWishlist, 
-    updateProductIntoCart
+    getOrderData,
+    addProductIntoOrder,
+    emptyCart
 } = require('../handler/userSQLHandler');
 
 app.http('authenticate', {
@@ -93,6 +94,49 @@ app.http('removeProductFromCart', {
     handler: async (request) => {
         let body = await request.json();
         let sqlResponse = await removeProductFromCart(body);
+        return {
+            body:  sqlResponse,
+            headers: { 'content-type': 'application/json' },
+            status: sqlResponse.status,
+        };
+    }
+});
+
+app.http('emptyCart', {
+    methods: ['POST'],
+    authLevel: 'anonymous',
+    route: 'user/emptyCart',
+    handler: async (request) => {
+        let body = await request.json();
+        let sqlResponse = await emptyCart(body);
+        return {
+            body:  sqlResponse,
+            headers: { 'content-type': 'application/json' },
+            status: sqlResponse.status,
+        };
+    }
+});
+
+app.http('getOrderData', {
+    methods: ['GET'],
+    authLevel: 'anonymous',
+    route: 'user/getOrderData/{user_ID}',
+    handler: async (request) => {
+        return {
+            body: await getOrderData(request?.params.user_ID) ,
+            headers: { 'content-type': 'application/json' }
+        };
+    }
+});
+
+
+app.http('addProductIntoOrder', {
+    methods: ['POST'],
+    authLevel: 'anonymous',
+    route: 'user/addProductIntoOrder',
+    handler: async (request) => {
+        let body = await request.json();
+        let sqlResponse = await addProductIntoOrder(body);
         return {
             body:  sqlResponse,
             headers: { 'content-type': 'application/json' },

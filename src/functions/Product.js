@@ -1,7 +1,10 @@
 const { app } = require('@azure/functions');
-const fs = require('fs');
-const { readData } = require('../handler/ReadUserTable');
-const { getProducts, getProductsByID, getProductsCategoryList, getProductsByCategory } = require('../handler/productSQLHandler');
+const { 
+    getProducts, 
+    getProductsByID, 
+    getProductsCategoryList, 
+    getProductsByCategory 
+} = require('../handler/productSQLHandler');
 
 app.http('getProducts', {
     methods: ['GET'],
